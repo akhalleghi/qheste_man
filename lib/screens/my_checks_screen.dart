@@ -1,5 +1,6 @@
-﻿import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart';
 
+import '../data/app_data.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
@@ -8,23 +9,7 @@ class MyChecksScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final checks = [
-      const CheckItem(
-        title: 'چک اجاره دفتر',
-        amount: '۹,۵۰۰,۰۰۰',
-        dueDate: '۱۴۰۴/۱۲/۱۰',
-      ),
-      const CheckItem(
-        title: 'چک تامین تجهیزات',
-        amount: '۶,۲۰۰,۰۰۰',
-        dueDate: '۱۴۰۴/۱۲/۲۰',
-      ),
-      const CheckItem(
-        title: 'چک خرید اقساطی',
-        amount: '۱۴,۰۰۰,۰۰۰',
-        dueDate: '۱۴۰۵/۰۱/۰۸',
-      ),
-    ];
+    final checks = AppData.checks;
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
@@ -140,10 +125,7 @@ class _ChecksHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 const Expanded(
-                  child: _HeaderStat(
-                    title: 'سررسید نزدیک',
-                    value: '۱۰ اسفند',
-                  ),
+                  child: _HeaderStat(title: 'سررسید نزدیک', value: '۱۰ اسفند'),
                 ),
               ],
             ),
@@ -275,16 +257,4 @@ class _CheckCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class CheckItem {
-  const CheckItem({
-    required this.title,
-    required this.amount,
-    required this.dueDate,
-  });
-
-  final String title;
-  final String amount;
-  final String dueDate;
 }

@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/my_checks_screen.dart';
+import 'screens/search_screen.dart';
 import 'screens/settings_screen.dart';
 import 'theme/app_colors.dart';
 
@@ -115,7 +116,7 @@ class _RootTabsState extends State<RootTabs> {
     final screens = [
       const HomeScreen(),
       const MyChecksScreen(),
-      const _SearchScreen(),
+      const SearchScreen(),
       SettingsScreen(
         isDarkMode: widget.isDarkMode,
         onDarkModeChanged: widget.onThemeChanged,
@@ -127,10 +128,7 @@ class _RootTabsState extends State<RootTabs> {
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 110),
-            child: IndexedStack(
-              index: _currentIndex,
-              children: screens,
-            ),
+            child: IndexedStack(index: _currentIndex, children: screens),
           ),
           Positioned(
             left: 20,
@@ -216,7 +214,9 @@ class _RootTabsState extends State<RootTabs> {
                           context: context,
                           builder: (_) => CupertinoAlertDialog(
                             title: const Text('افزودن قسط جدید'),
-                            content: const Text('این بخش به زودی اضافه می شود.'),
+                            content: const Text(
+                              'این بخش به زودی اضافه می شود.',
+                            ),
                             actions: [
                               CupertinoDialogAction(
                                 child: const Text('باشه'),
@@ -278,11 +278,7 @@ class _TabItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: isActive ? activeColor : inactiveColor,
-              size: 24,
-            ),
+            Icon(icon, color: isActive ? activeColor : inactiveColor, size: 24),
             const SizedBox(height: 5),
             Text(
               label,
@@ -304,29 +300,6 @@ class _TabItem extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SearchScreen extends StatelessWidget {
-  const _SearchScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      child: SafeArea(
-        child: Center(
-          child: Text(
-            'جستجو',
-            style: TextStyle(
-              fontFamily: 'Vazirmatn',
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.titleText(context),
-            ),
-          ),
         ),
       ),
     );

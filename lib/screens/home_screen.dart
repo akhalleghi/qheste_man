@@ -1,5 +1,6 @@
-﻿import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart';
 
+import '../data/app_data.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/installment_card.dart';
@@ -10,23 +11,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final installments = [
-      const InstallmentItem(
-        title: 'وام خودرو',
-        remainingAmount: '۱۲,۰۰۰,۰۰۰',
-        nextPaymentDate: '۱۴۰۴/۱۲/۱۵',
-      ),
-      const InstallmentItem(
-        title: 'قسط لپ\u200cتاپ',
-        remainingAmount: '۸,۵۰۰,۰۰۰',
-        nextPaymentDate: '۱۴۰۴/۱۲/۲۲',
-      ),
-      const InstallmentItem(
-        title: 'وام شخصی',
-        remainingAmount: '۲۴,۰۰۰,۰۰۰',
-        nextPaymentDate: '۱۴۰۵/۰۱/۰۵',
-      ),
-    ];
+    final installments = AppData.installments;
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
@@ -153,10 +138,7 @@ class _HomeHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 const Expanded(
-                  child: _HeaderStat(
-                    title: 'پرداخت بعدی',
-                    value: '۱۵ اسفند',
-                  ),
+                  child: _HeaderStat(title: 'پرداخت بعدی', value: '۱۵ اسفند'),
                 ),
               ],
             ),
@@ -206,16 +188,4 @@ class _HeaderStat extends StatelessWidget {
       ),
     );
   }
-}
-
-class InstallmentItem {
-  const InstallmentItem({
-    required this.title,
-    required this.remainingAmount,
-    required this.nextPaymentDate,
-  });
-
-  final String title;
-  final String remainingAmount;
-  final String nextPaymentDate;
 }

@@ -69,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: 'عمومی',
               children: [
                 _switchRow(
-                  title: 'اعلان\u200cها',
+                  title: 'اعلان‌ها',
                   value: notificationsEnabled,
                   onChanged: (value) {
                     setState(() {
