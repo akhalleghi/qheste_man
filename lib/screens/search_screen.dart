@@ -1,13 +1,19 @@
 import 'package:flutter/cupertino.dart';
 
-import '../data/app_data.dart';
 import '../models/finance_items.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import 'installment_details_screen.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  const SearchScreen({
+    super.key,
+    required this.installments,
+    required this.checks,
+  });
+
+  final List<InstallmentItem> installments;
+  final List<CheckItem> checks;
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -81,7 +87,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   List<InstallmentItem> _filterInstallments(String query) {
     if (query.isEmpty) return const [];
-    return AppData.installments
+    return widget.installments
         .where(
           (item) =>
               item.title.contains(query) ||
@@ -93,7 +99,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   List<CheckItem> _filterChecks(String query) {
     if (query.isEmpty) return const [];
-    return AppData.checks
+    return widget.checks
         .where(
           (item) =>
               item.title.contains(query) ||

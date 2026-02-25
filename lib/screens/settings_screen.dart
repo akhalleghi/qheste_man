@@ -161,6 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+
 }
 
 class _AboutScreen extends StatelessWidget {

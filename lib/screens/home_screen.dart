@@ -1,18 +1,18 @@
 import 'package:flutter/cupertino.dart';
 
-import '../data/app_data.dart';
+import '../models/finance_items.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/installment_card.dart';
 import 'installment_details_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, required this.installments});
+
+  final List<InstallmentItem> installments;
 
   @override
   Widget build(BuildContext context) {
-    final installments = AppData.installments;
-
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(
@@ -44,24 +44,36 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
-            ...installments.map(
-              (item) => InstallmentCard(
-                title: item.title,
-                remainingAmount: item.remainingAmount,
-                nextPaymentDate: item.nextPaymentDate,
-                onTap: () {
-                  Navigator.of(context).push(
-                    CupertinoPageRoute<void>(
-                      builder: (_) => InstallmentDetailsScreen(
-                        title: item.title,
-                        remainingAmount: item.remainingAmount,
-                        nextPaymentDate: item.nextPaymentDate,
+            if (installments.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: Text(
+                  'هنوز قسطی ثبت نشده است.',
+                  style: TextStyle(
+                    fontFamily: 'Vazirmatn',
+                    color: AppColors.secondaryText(context),
+                  ),
+                ),
+              )
+            else
+              ...installments.map(
+                (item) => InstallmentCard(
+                  title: item.title,
+                  remainingAmount: item.remainingAmount,
+                  nextPaymentDate: item.nextPaymentDate,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      CupertinoPageRoute<void>(
+                        builder: (_) => InstallmentDetailsScreen(
+                          title: item.title,
+                          remainingAmount: item.remainingAmount,
+                          nextPaymentDate: item.nextPaymentDate,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
           ],
         ),
       ),

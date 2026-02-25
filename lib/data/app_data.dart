@@ -1,24 +1,6 @@
 import '../models/finance_items.dart';
 
 class AppData {
-  static const installments = [
-    InstallmentItem(
-      title: 'وام خودرو',
-      remainingAmount: '۱۲,۰۰۰,۰۰۰',
-      nextPaymentDate: '۱۴۰۴/۱۲/۱۵',
-    ),
-    InstallmentItem(
-      title: 'قسط لپ‌تاپ',
-      remainingAmount: '۸,۵۰۰,۰۰۰',
-      nextPaymentDate: '۱۴۰۴/۱۲/۲۲',
-    ),
-    InstallmentItem(
-      title: 'وام شخصی',
-      remainingAmount: '۲۴,۰۰۰,۰۰۰',
-      nextPaymentDate: '۱۴۰۵/۰۱/۰۵',
-    ),
-  ];
-
   static const checks = [
     CheckItem(
       title: 'چک اجاره دفتر',
@@ -35,5 +17,36 @@ class AppData {
       amount: '۱۴,۰۰۰,۰۰۰',
       dueDate: '۱۴۰۵/۰۱/۰۸',
     ),
+  ];
+
+  // Based on commonly listed Iranian banks and licensed credit institutions.
+  static const lenders = [
+    'بانک ملی ایران',
+    'بانک سپه',
+    'بانک مسکن',
+    'بانک کشاورزی',
+    'بانک صنعت و معدن',
+    'بانک توسعه صادرات ایران',
+    'بانک توسعه تعاون',
+    'پست بانک ایران',
+    'بانک ملت',
+    'بانک تجارت',
+    'بانک صادرات ایران',
+    'بانک رفاه کارگران',
+    'بانک پارسیان',
+    'بانک پاسارگاد',
+    'بانک اقتصاد نوین',
+    'بانک کارآفرین',
+    'بانک سامان',
+    'بانک سینا',
+    'بانک دی',
+    'بانک شهر',
+    'بانک ایران زمین',
+    'بانک گردشگری',
+    'بانک خاورمیانه',
+    'بانک قرض‌الحسنه مهر ایران',
+    'بانک قرض‌الحسنه رسالت',
+    'موسسه اعتباری ملل',
+    'سایر',
   ];
 }

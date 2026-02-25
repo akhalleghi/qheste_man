@@ -4,13 +4,20 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'data/app_data.dart';
+import 'models/finance_items.dart';
+import 'screens/add_installment_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/my_checks_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/settings_screen.dart';
+import 'services/installment_storage.dart';
+import 'services/reminder_service.dart';
 import 'theme/app_colors.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ReminderService.initialize();
   runApp(const MyInstallmentsApp());
 }
 
@@ -106,6 +113,25 @@ class RootTabs extends StatefulWidget {
 
 class _RootTabsState extends State<RootTabs> {
   int _currentIndex = 0;
+  List<InstallmentItem> _installments = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInstallments();
+  }
+
+  Future<void> _loadInstallments() async {
+    final items = await InstallmentStorage.loadInstallments();
+    if (!mounted) return;
+    setState(() {
+      _installments = items;
+    });
+  }
+
+  Future<void> _saveInstallments() async {
+    await InstallmentStorage.saveInstallments(_installments);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,9 +140,9 @@ class _RootTabsState extends State<RootTabs> {
         : AppColors.primary;
 
     final screens = [
-      const HomeScreen(),
+      HomeScreen(installments: _installments),
       const MyChecksScreen(),
-      const SearchScreen(),
+      SearchScreen(installments: _installments, checks: AppData.checks),
       SettingsScreen(
         isDarkMode: widget.isDarkMode,
         onDarkModeChanged: widget.onThemeChanged,
@@ -209,23 +235,7 @@ class _RootTabsState extends State<RootTabs> {
                   Positioned(
                     top: -30,
                     child: GestureDetector(
-                      onTap: () {
-                        showCupertinoDialog<void>(
-                          context: context,
-                          builder: (_) => CupertinoAlertDialog(
-                            title: const Text('افزودن قسط جدید'),
-                            content: const Text(
-                              'این بخش به زودی اضافه می شود.',
-                            ),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('باشه'),
-                                onPressed: () => Navigator.of(context).pop(),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                      onTap: () => _showAddOptions(context),
                       child: Container(
                         width: 78,
                         height: 78,
@@ -248,6 +258,81 @@ class _RootTabsState extends State<RootTabs> {
         ],
       ),
     );
+  }
+
+  void _showAddOptions(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    final surfaceColor = isDark
+        ? const Color(0xFF1C1C1E)
+        : CupertinoColors.white;
+    final borderColor = isDark
+        ? const Color(0x33FFFFFF)
+        : const Color(0x16000000);
+
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (popupContext) {
+        return Container(
+          margin: const EdgeInsets.fromLTRB(14, 0, 14, 18),
+          padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+          decoration: BoxDecoration(
+            color: surfaceColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: borderColor, width: 1),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.divider(context),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _AddOptionButton(
+                  title: 'افزودن قسط جدید',
+                  icon: CupertinoIcons.doc_text_fill,
+                  iconColor: AppColors.primary,
+                  iconBackground: AppColors.primary.withValues(alpha: 0.14),
+                  onTap: () => _openAddInstallmentForm(popupContext),
+                ),
+                const SizedBox(height: 10),
+                _AddOptionButton(
+                  title: 'افزودن چک جدید',
+                  icon: CupertinoIcons.doc_on_clipboard_fill,
+                  iconColor: AppColors.checksAccent,
+                  iconBackground: AppColors.checksAccent.withValues(
+                    alpha: 0.14,
+                  ),
+                  onTap: () => Navigator.of(popupContext).pop(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openAddInstallmentForm(BuildContext popupContext) async {
+    Navigator.of(popupContext).pop();
+    final created = await Navigator.of(context).push<InstallmentItem>(
+      CupertinoPageRoute<InstallmentItem>(
+        builder: (_) => const AddInstallmentScreen(),
+      ),
+    );
+    if (!mounted || created == null) return;
+    setState(() {
+      _installments = [..._installments, created];
+      _currentIndex = 0;
+    });
+    await _saveInstallments();
+    await ReminderService.scheduleForInstallment(created);
   }
 }
 
@@ -298,6 +383,67 @@ class _TabItem extends StatelessWidget {
                 color: activeColor,
                 borderRadius: BorderRadius.circular(2),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AddOptionButton extends StatelessWidget {
+  const _AddOptionButton({
+    required this.title,
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.background(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.divider(context), width: 0.8),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: iconBackground,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Vazirmatn',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.titleText(context),
+                ),
+              ),
+            ),
+            Icon(
+              CupertinoIcons.chevron_back,
+              color: AppColors.secondaryText(context),
+              size: 18,
             ),
           ],
         ),
