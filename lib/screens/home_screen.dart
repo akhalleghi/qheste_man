@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+﻿import 'package:flutter/cupertino.dart';
+import 'package:shamsi_date/shamsi_date.dart';
 
 import '../models/finance_items.dart';
 import '../theme/app_colors.dart';
@@ -7,16 +8,23 @@ import '../widgets/installment_card.dart';
 import 'installment_details_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.installments});
+  const HomeScreen({
+    super.key,
+    required this.installments,
+    required this.onInstallmentUpdated,
+    required this.onInstallmentDeleted,
+  });
 
   final List<InstallmentItem> installments;
+  final ValueChanged<InstallmentItem> onInstallmentUpdated;
+  final ValueChanged<String> onInstallmentDeleted;
 
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(
-          'اقساط من',
+          '\u0627\u0642\u0633\u0627\u0637 \u0645\u0646',
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -34,7 +42,7 @@ class HomeScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: Text(
-                'لیست اقساط من',
+                '\u0644\u06cc\u0633\u062a \u0627\u0642\u0633\u0627\u0637 \u0645\u0646',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -46,12 +54,51 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: AppSpacing.xs),
             if (installments.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Text(
-                  'هنوز قسطی ثبت نشده است.',
-                  style: TextStyle(
-                    fontFamily: 'Vazirmatn',
-                    color: AppColors.secondaryText(context),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  70,
+                  AppSpacing.md,
+                  20,
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 84,
+                        height: 84,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          CupertinoIcons.doc_text_search,
+                          size: 36,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        '\u0647\u0646\u0648\u0632 \u0627\u0642\u0633\u0627\u0637\u06cc \u0628\u0631\u0627\u06cc \u0634\u0645\u0627 \u062b\u0628\u062a \u0646\u0634\u062f\u0647 \u0627\u0633\u062a.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Vazirmatn',
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.titleText(context),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '\u0627\u0632 \u062f\u06a9\u0645\u0647 \u0627\u0641\u0632\u0648\u062f\u0646 \u062f\u0631 \u067e\u0627\u06cc\u06cc\u0646 \u0635\u0641\u062d\u0647\u060c \u0627\u0648\u0644\u06cc\u0646 \u0642\u0633\u0637 \u062e\u0648\u062f \u0631\u0627 \u062b\u0628\u062a \u06a9\u0646\u06cc\u062f.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Vazirmatn',
+                          fontSize: 14,
+                          height: 1.8,
+                          color: AppColors.secondaryText(context),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               )
@@ -61,16 +108,10 @@ class HomeScreen extends StatelessWidget {
                   title: item.title,
                   remainingAmount: item.remainingAmount,
                   nextPaymentDate: item.nextPaymentDate,
+                  progressedMonths: _elapsedMonths(item),
+                  totalMonths: item.durationMonths,
                   onTap: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute<void>(
-                        builder: (_) => InstallmentDetailsScreen(
-                          title: item.title,
-                          remainingAmount: item.remainingAmount,
-                          nextPaymentDate: item.nextPaymentDate,
-                        ),
-                      ),
-                    );
+                    _openDetails(context, item);
                   },
                 ),
               ),
@@ -78,6 +119,25 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openDetails(
+    BuildContext context,
+    InstallmentItem installment,
+  ) async {
+    final result = await Navigator.of(context).push<InstallmentDetailsResult>(
+      CupertinoPageRoute<InstallmentDetailsResult>(
+        builder: (_) => InstallmentDetailsScreen(installment: installment),
+      ),
+    );
+    if (result == null) return;
+    if (result.deleted) {
+      onInstallmentDeleted(installment.id);
+      return;
+    }
+    if (result.updatedItem != null) {
+      onInstallmentUpdated(result.updatedItem!);
+    }
   }
 }
 
@@ -128,7 +188,7 @@ class _HomeHeader extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 const Expanded(
                   child: Text(
-                    'مدیریت هوشمند اقساط',
+                    '\u0645\u062f\u06cc\u0631\u06cc\u062a \u0647\u0648\u0634\u0645\u0646\u062f \u0627\u0642\u0633\u0627\u0637',
                     style: TextStyle(
                       fontFamily: 'Vazirmatn',
                       fontSize: 18,
@@ -144,13 +204,16 @@ class _HomeHeader extends StatelessWidget {
               children: [
                 Expanded(
                   child: _HeaderStat(
-                    title: 'تعداد اقساط',
-                    value: '$installmentCount مورد',
+                    title: '\u062a\u0639\u062f\u0627\u062f \u0627\u0642\u0633\u0627\u0637',
+                    value: '$installmentCount \u0645\u0648\u0631\u062f',
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 const Expanded(
-                  child: _HeaderStat(title: 'پرداخت بعدی', value: '۱۵ اسفند'),
+                  child: _HeaderStat(
+                    title: '\u067e\u0631\u062f\u0627\u062e\u062a \u0628\u0639\u062f\u06cc',
+                    value: '\u06f1\u06f5 \u0627\u0633\u0641\u0646\u062f',
+                  ),
                 ),
               ],
             ),
@@ -201,3 +264,19 @@ class _HeaderStat extends StatelessWidget {
     );
   }
 }
+
+
+int _elapsedMonths(InstallmentItem item) {
+  final parts = item.firstDueDate.split('/');
+  if (parts.length != 3) return 0;
+  final y = int.tryParse(parts[0]) ?? 0;
+  final m = int.tryParse(parts[1]) ?? 0;
+  if (y <= 0 || m <= 0) return 0;
+
+  final now = Jalali.now();
+  final diff = ((now.year - y) * 12) + (now.month - m) + 1;
+  if (diff < 0) return 0;
+  if (diff > item.durationMonths) return item.durationMonths;
+  return diff;
+}
+

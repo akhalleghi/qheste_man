@@ -132,9 +132,7 @@ class _SearchScreenState extends State<SearchScreen> {
         Navigator.of(context).push(
           CupertinoPageRoute<void>(
             builder: (_) => InstallmentDetailsScreen(
-              title: item.title,
-              remainingAmount: item.remainingAmount,
-              nextPaymentDate: item.nextPaymentDate,
+              installment: item,
             ),
           ),
         );

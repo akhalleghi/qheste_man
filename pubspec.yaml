@@ -18,6 +18,8 @@ dependencies:
   timezone: ^0.9.4
   device_calendar: ^4.3.3
   permission_handler: ^11.4.0
+  image_picker: ^1.1.2
+  file_picker: ^8.1.2
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

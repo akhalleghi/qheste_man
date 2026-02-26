@@ -19,6 +19,9 @@ class InstallmentItem {
     required this.notifyPush,
     required this.notifyCalendar,
     required this.notifySms,
+    required this.note,
+    required this.paidInstallmentIndexes,
+    required this.installmentReceiptPaths,
     required this.createdAtIso,
   });
 
@@ -41,7 +44,45 @@ class InstallmentItem {
   final bool notifyPush;
   final bool notifyCalendar;
   final bool notifySms;
+  final String note;
+  final List<int> paidInstallmentIndexes;
+  final Map<String, String> installmentReceiptPaths;
   final String createdAtIso;
+
+  InstallmentItem copyWith({
+    String? remainingAmount,
+    String? nextPaymentDate,
+    List<int>? paidInstallmentIndexes,
+    Map<String, String>? installmentReceiptPaths,
+  }) {
+    return InstallmentItem(
+      id: id,
+      title: title,
+      totalAmount: totalAmount,
+      durationMonths: durationMonths,
+      annualInterestPercent: annualInterestPercent,
+      monthlyInstallmentAmount: monthlyInstallmentAmount,
+      remainingAmount: remainingAmount ?? this.remainingAmount,
+      firstDueDate: firstDueDate,
+      nextPaymentDate: nextPaymentDate ?? this.nextPaymentDate,
+      lenderName: lenderName,
+      hasAnnualFee: hasAnnualFee,
+      annualFeeAmount: annualFeeAmount,
+      hasPenaltyFee: hasPenaltyFee,
+      penaltyFeeType: penaltyFeeType,
+      penaltyFeeAmount: penaltyFeeAmount,
+      penaltyFeePercent: penaltyFeePercent,
+      notifyPush: notifyPush,
+      notifyCalendar: notifyCalendar,
+      notifySms: notifySms,
+      note: note,
+      paidInstallmentIndexes:
+          paidInstallmentIndexes ?? this.paidInstallmentIndexes,
+      installmentReceiptPaths:
+          installmentReceiptPaths ?? this.installmentReceiptPaths,
+      createdAtIso: createdAtIso,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -64,6 +105,9 @@ class InstallmentItem {
       'notifyPush': notifyPush,
       'notifyCalendar': notifyCalendar,
       'notifySms': notifySms,
+      'note': note,
+      'paidInstallmentIndexes': paidInstallmentIndexes,
+      'installmentReceiptPaths': installmentReceiptPaths,
       'createdAtIso': createdAtIso,
     };
   }
@@ -91,6 +135,14 @@ class InstallmentItem {
       notifyPush: json['notifyPush'] as bool? ?? true,
       notifyCalendar: json['notifyCalendar'] as bool? ?? false,
       notifySms: json['notifySms'] as bool? ?? false,
+      note: json['note'] as String? ?? '',
+      paidInstallmentIndexes: ((json['paidInstallmentIndexes'] as List?) ?? [])
+          .map((e) => e as int)
+          .toList(),
+      installmentReceiptPaths:
+          ((json['installmentReceiptPaths'] as Map?) ?? {}).map(
+            (key, value) => MapEntry('$key', '$value'),
+          ),
       createdAtIso: json['createdAtIso'] as String? ?? '',
     );
   }

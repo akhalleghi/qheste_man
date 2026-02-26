@@ -140,7 +140,11 @@ class _RootTabsState extends State<RootTabs> {
         : AppColors.primary;
 
     final screens = [
-      HomeScreen(installments: _installments),
+      HomeScreen(
+        installments: _installments,
+        onInstallmentUpdated: _updateInstallment,
+        onInstallmentDeleted: _deleteInstallment,
+      ),
       const MyChecksScreen(),
       SearchScreen(installments: _installments, checks: AppData.checks),
       SettingsScreen(
@@ -333,6 +337,24 @@ class _RootTabsState extends State<RootTabs> {
     });
     await _saveInstallments();
     await ReminderService.scheduleForInstallment(created);
+  }
+
+  void _updateInstallment(InstallmentItem updated) {
+    setState(() {
+      _installments = _installments
+          .map((item) => item.id == updated.id ? updated : item)
+          .toList();
+    });
+    _saveInstallments();
+  }
+
+  void _deleteInstallment(String installmentId) {
+    setState(() {
+      _installments = _installments
+          .where((item) => item.id != installmentId)
+          .toList();
+    });
+    _saveInstallments();
   }
 }
 

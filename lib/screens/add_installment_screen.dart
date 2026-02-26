@@ -75,6 +75,9 @@ class _AddInstallmentScreenState extends State<AddInstallmentScreen> {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
+        leading: CupertinoNavigationBarBackButton(
+          color: AppColors.primary,
+        ),
         middle: Text(
           'افزودن قسط جدید',
           style: TextStyle(
@@ -801,6 +804,7 @@ class _AddInstallmentScreenState extends State<AddInstallmentScreen> {
         ? _otherLenderController.text.trim()
         : _selectedLender;
     final annualInterestRaw = _normalizeDigits(_annualInterestController.text);
+    final note = _noteController.text.trim();
 
     setState(() {
       _titleError = title.isEmpty ? 'این فیلد الزامی است.' : null;
@@ -860,6 +864,9 @@ class _AddInstallmentScreenState extends State<AddInstallmentScreen> {
       notifyPush: _notifyPush,
       notifyCalendar: _notifyCalendar,
       notifySms: false,
+      note: note,
+      paidInstallmentIndexes: const [],
+      installmentReceiptPaths: const {},
       createdAtIso: DateTime.now().toIso8601String(),
     );
 

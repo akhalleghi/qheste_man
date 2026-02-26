@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/finance_items.dart';
 
 class InstallmentStorage {
-  static const _installmentsKey = 'saved_installments_v1';
+  static const _installmentsKey = 'saved_installments_v2';
 
   static Future<List<InstallmentItem>> loadInstallments() async {
     final prefs = await SharedPreferences.getInstance();
