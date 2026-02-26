@@ -20,6 +20,7 @@ dependencies:
   permission_handler: ^11.4.0
   image_picker: ^1.1.2
   file_picker: ^8.1.2
+  url_launcher: ^6.3.1
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
@@ -33,6 +34,8 @@ dependency_overrides:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/img/logo.webp
   fonts:
     - family: Vazirmatn
       fonts:

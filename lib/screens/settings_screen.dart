@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+﻿import 'package:flutter/cupertino.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -41,7 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(
-          'تنظیمات',
+          '\u062a\u0646\u0638\u06cc\u0645\u0627\u062a',
           style: TextStyle(
             color: AppColors.titleText(context),
             fontFamily: 'Vazirmatn',
@@ -56,20 +57,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: Text(
-                'تنظیمات',
+                '\u062a\u0646\u0638\u06cc\u0645\u0627\u062a',
                 style: TextStyle(
                   fontSize: 30,
                   fontWeight: FontWeight.w700,
                   color: AppColors.titleText(context),
+                  fontFamily: 'Vazirmatn',
                 ),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
             IosSection(
-              title: 'عمومی',
+              title: '\u0639\u0645\u0648\u0645\u06cc',
               children: [
                 _switchRow(
-                  title: 'اعلان‌ها',
+                  title: '\u0627\u0639\u0644\u0627\u0646\u200c\u0647\u0627',
                   value: notificationsEnabled,
                   onChanged: (value) {
                     setState(() {
@@ -78,7 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 _switchRow(
-                  title: 'حالت تاریک',
+                  title: '\u062d\u0627\u0644\u062a \u062a\u0627\u0631\u06cc\u06a9',
                   value: darkModeEnabled,
                   onChanged: (value) {
                     setState(() {
@@ -88,7 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 _navigationRow(
-                  title: 'درباره برنامه',
+                  title: '\u062f\u0631\u0628\u0627\u0631\u0647 \u0628\u0631\u0646\u0627\u0645\u0647',
                   onTap: () {
                     Navigator.of(context).push(
                       CupertinoPageRoute<void>(
@@ -121,6 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               title,
               style: TextStyle(
+                fontFamily: 'Vazirmatn',
                 fontSize: 16,
                 color: AppColors.bodyText(context),
               ),
@@ -146,6 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Text(
                 title,
                 style: TextStyle(
+                  fontFamily: 'Vazirmatn',
                   fontSize: 16,
                   color: AppColors.bodyText(context),
                 ),
@@ -161,11 +165,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
-
 }
 
 class _AboutScreen extends StatelessWidget {
   const _AboutScreen();
+
+  static final Uri _websiteUri = Uri.parse('https://bizto.ir/');
+  static final Uri _phoneUri = Uri.parse('tel:+989137640338');
+  static final Uri _whatsappUri = Uri.parse('https://wa.me/989137640338');
+  static final Uri _telegramUri = Uri.parse('https://t.me/aminkhaleghi');
+  static final Uri _telegramAppUri = Uri.parse('tg://resolve?domain=aminkhaleghi');
+  static final Uri _emailUri = Uri.parse(
+    'mailto:akhalleghi@gmail.com?subject=%D8%AF%D8%B1%D8%AE%D9%88%D8%A7%D8%B3%D8%AA%20%D8%B7%D8%B1%D8%A7%D8%AD%DB%8C%20%D9%BE%D8%B1%D9%88%DA%98%D9%87',
+  );
+
+  Future<void> _openUri(
+    BuildContext context,
+    Uri uri, {
+    Uri? fallbackUri,
+  }) async {
+    var ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && fallbackUri != null) {
+      ok = await launchUrl(
+        fallbackUri,
+        mode: LaunchMode.externalApplication,
+      );
+    }
+    if (!ok && context.mounted) {
+      await showCupertinoDialog<void>(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text(
+            '\u062e\u0637\u0627',
+            style: TextStyle(fontFamily: 'Vazirmatn'),
+          ),
+          content: const Text(
+            '\u0627\u0645\u06a9\u0627\u0646 \u0628\u0627\u0632 \u06a9\u0631\u062f\u0646 \u0627\u06cc\u0646 \u0644\u06cc\u0646\u06a9 \u0648\u062c\u0648\u062f \u0646\u062f\u0627\u0631\u062f.',
+            style: TextStyle(fontFamily: 'Vazirmatn'),
+          ),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text(
+                '\u0628\u0633\u062a\u0646',
+                style: TextStyle(fontFamily: 'Vazirmatn'),
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -174,9 +224,9 @@ class _AboutScreen extends StatelessWidget {
         leading: const CupertinoNavigationBarBackButton(
           color: AppColors.primary,
         ),
-        previousPageTitle: 'تنظیمات',
+        previousPageTitle: '\u062a\u0646\u0638\u06cc\u0645\u0627\u062a',
         middle: Text(
-          'درباره برنامه',
+          '\u062f\u0631\u0628\u0627\u0631\u0647 \u0645\u0627',
           style: TextStyle(
             color: AppColors.titleText(context),
             fontFamily: 'Vazirmatn',
@@ -185,30 +235,235 @@ class _AboutScreen extends StatelessWidget {
         ),
       ),
       child: SafeArea(
-        child: Padding(
+        child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'اقساط من',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.titleText(context),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                gradient: const LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: [Color(0xFF0A84FF), Color(0xFF0063CC)],
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.cardShadow(context),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'مدیریت ساده و سریع اقساط شخصی با رابط کاربری iOS و پشتیبانی کامل از زبان فارسی.',
+              child: Row(
+                children: [
+                  Container(
+                    width: 88,
+                    height: 88,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0x33FFFFFF),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Image.asset(
+                      'assets/img/logo.webp',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '\u062a\u06cc\u0645 \u062a\u0648\u0633\u0639\u0647 \u0646\u0631\u0645 \u0627\u0641\u0632\u0627\u0631 \u0628\u06cc\u0632\u062a\u0648',
+                          style: TextStyle(
+                            fontFamily: 'Vazirmatn',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: CupertinoColors.white,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '\u0637\u0631\u0627\u062d\u06cc \u0648\u0628 \u0648 \u0627\u0646\u062f\u0631\u0648\u06cc\u062f',
+                          style: TextStyle(
+                            fontFamily: 'Vazirmatn',
+                            fontSize: 13,
+                            color: Color(0xE6FFFFFF),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.sectionBackground(context),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.divider(context), width: 0.7),
+              ),
+              child: Text(
+                '\u0628\u06cc\u0632\u062a\u0648 \u06cc\u06a9 \u062a\u06cc\u0645 \u062e\u0644\u0627\u0642 \u0628\u0631\u0627\u06cc \u0637\u0631\u0627\u062d\u06cc \u0648 \u062a\u0648\u0633\u0639\u0647 \u0648\u0628\u200c\u0633\u0627\u06cc\u062a \u0648 \u0627\u067e\u0644\u06cc\u06a9\u06cc\u0634\u0646 \u0627\u0646\u062f\u0631\u0648\u06cc\u062f \u0627\u0633\u062a. \u0627\u06af\u0631 \u0628\u0631\u0627\u06cc \u067e\u0631\u0648\u0698\u0647 \u062c\u062f\u06cc\u062f \u06cc\u0627 \u0628\u0647\u0628\u0648\u062f \u0645\u062d\u0635\u0648\u0644 \u0641\u0639\u0644\u06cc \u062e\u0648\u062f \u0628\u0647 \u0645\u0634\u0627\u0648\u0631\u0647 \u0646\u06cc\u0627\u0632 \u062f\u0627\u0631\u06cc\u062f\u060c \u067e\u06cc\u0627\u0645 \u0628\u062f\u0647\u06cc\u062f.',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontFamily: 'Vazirmatn',
+                  fontSize: 14,
+                  height: 1.8,
                   color: AppColors.bodyText(context),
-                  height: 1.5,
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              '\u0631\u0627\u0647\u200c\u0647\u0627\u06cc \u0627\u0631\u062a\u0628\u0627\u0637 \u0628\u0627 \u0645\u0627',
+              style: TextStyle(
+                fontFamily: 'Vazirmatn',
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppColors.titleText(context),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _ContactTile(
+              icon: CupertinoIcons.globe,
+              title: '\u0648\u0628\u200c\u0633\u0627\u06cc\u062a',
+              value: 'https://bizto.ir/',
+              onTap: () => _openUri(context, _websiteUri),
+            ),
+            _ContactTile(
+              icon: CupertinoIcons.phone_fill,
+              title: '\u062a\u0645\u0627\u0633',
+              value: '+98 913 764 0338',
+              forceLtrValue: true,
+              onTap: () => _openUri(context, _phoneUri),
+            ),
+            _ContactTile(
+              icon: CupertinoIcons.chat_bubble_2_fill,
+              title: '\u0648\u0627\u062a\u0633\u200c\u0627\u067e',
+              value: 'wa.me/989137640338',
+              forceLtrValue: true,
+              onTap: () => _openUri(context, _whatsappUri),
+            ),
+            _ContactTile(
+              icon: CupertinoIcons.paperplane_fill,
+              title: '\u062a\u0644\u06af\u0631\u0627\u0645',
+              value: '@aminkhaleghi',
+              forceLtrValue: true,
+              onTap: () => _openUri(
+                context,
+                _telegramAppUri,
+                fallbackUri: _telegramUri,
+              ),
+            ),
+            _ContactTile(
+              icon: CupertinoIcons.mail_solid,
+              title: '\u0627\u06cc\u0645\u06cc\u0644',
+              value: 'akhalleghi@gmail.com',
+              forceLtrValue: true,
+              onTap: () => _openUri(context, _emailUri),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                '\u0628\u0631\u0627\u06cc \u0633\u0641\u0627\u0631\u0634 \u0637\u0631\u0627\u062d\u06cc \u0633\u0627\u06cc\u062a \u06cc\u0627 \u0627\u067e \u0627\u0646\u062f\u0631\u0648\u06cc\u062f\u060c \u0627\u0632 \u0647\u0631 \u06a9\u062f\u0627\u0645 \u0627\u0632 \u0631\u0627\u0647\u200c\u0647\u0627\u06cc \u0628\u0627\u0644\u0627 \u0645\u0633\u062a\u0642\u06cc\u0645 \u067e\u06cc\u0627\u0645 \u0628\u062f\u0647\u06cc\u062f.',
+                style: TextStyle(
+                  fontFamily: 'Vazirmatn',
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.titleText(context),
+                  height: 1.7,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ContactTile extends StatelessWidget {
+  const _ContactTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onTap,
+    this.forceLtrValue = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+  final VoidCallback onTap;
+  final bool forceLtrValue;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: AppColors.sectionBackground(context),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.divider(context), width: 0.7),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: AppColors.primary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Vazirmatn',
+                      fontSize: 12,
+                      color: AppColors.secondaryText(context),
+                    ),
+                  ),
+                  Text(
+                    value,
+                    textDirection: forceLtrValue
+                        ? TextDirection.ltr
+                        : TextDirection.rtl,
+                    textAlign: forceLtrValue ? TextAlign.left : TextAlign.right,
+                    style: TextStyle(
+                      fontFamily: 'Vazirmatn',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.titleText(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              CupertinoIcons.chevron_back,
+              color: AppColors.secondaryText(context),
+              size: 16,
+            ),
+          ],
         ),
       ),
     );
