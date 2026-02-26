@@ -5,6 +5,14 @@ allprojects {
     }
 }
 
+subprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        // Some transitive Android plugins still compile with source/target 8.
+        // Suppress obsolete option warnings to keep build logs clean.
+        options.compilerArgs.add("-Xlint:-options")
+    }
+}
+
 buildscript {
     repositories {
         google()
