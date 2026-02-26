@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import '../models/finance_items.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'check_details_screen.dart';
 import 'installment_details_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -99,12 +100,34 @@ class _SearchScreenState extends State<SearchScreen> {
 
   List<CheckItem> _filterChecks(String query) {
     if (query.isEmpty) return const [];
+    final normalized = query.toLowerCase();
     return widget.checks
         .where(
-          (item) =>
-              item.title.contains(query) ||
-              item.amount.contains(query) ||
-              item.dueDate.contains(query),
+          (item) {
+            final typeFa = item.checkType == 'received'
+                ? '\u062f\u0631\u06cc\u0627\u0641\u062a\u06cc'
+                : '\u067e\u0631\u062f\u0627\u062e\u062a\u06cc';
+            final settledFa = item.isSettled
+                ? (item.checkType == 'received'
+                      ? '\u062f\u0631\u06cc\u0627\u0641\u062a \u0634\u062f\u0647'
+                      : '\u067e\u0631\u062f\u0627\u062e\u062a \u0634\u062f\u0647')
+                : '\u062a\u0633\u0648\u06cc\u0647 \u0646\u0634\u062f\u0647';
+            final haystack = <String>[
+              item.title,
+              item.amount,
+              item.dueDate,
+              item.counterparty,
+              item.checkType,
+              typeFa,
+              item.checkNumber,
+              item.sayadiNumber,
+              item.bankName,
+              item.issueDate,
+              item.note,
+              settledFa,
+            ].join(' ').toLowerCase();
+            return haystack.contains(normalized);
+          },
         )
         .toList();
   }
@@ -148,17 +171,9 @@ class _SearchScreenState extends State<SearchScreen> {
       accentColor: AppColors.checksAccent,
       icon: CupertinoIcons.doc_on_clipboard_fill,
       onTap: () {
-        showCupertinoDialog<void>(
-          context: context,
-          builder: (_) => CupertinoAlertDialog(
-            title: Text(item.title),
-            content: Text('مبلغ ${item.amount} تومان\nسررسید ${item.dueDate}'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('بستن'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ],
+        Navigator.of(context).push(
+          CupertinoPageRoute<void>(
+            builder: (_) => CheckDetailsScreen(item: item),
           ),
         );
       },
@@ -245,7 +260,11 @@ class _SearchInput extends StatelessWidget {
               controller: controller,
               onChanged: onChanged,
               placeholder: 'جستجو در اقساط و چک ها...',
-              style: const TextStyle(fontFamily: 'Vazirmatn', fontSize: 15),
+              style: TextStyle(
+                fontFamily: 'Vazirmatn',
+                fontSize: 15,
+                color: AppColors.bodyText(context),
+              ),
               placeholderStyle: TextStyle(
                 fontFamily: 'Vazirmatn',
                 fontSize: 14,

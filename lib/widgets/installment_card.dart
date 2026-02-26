@@ -1,6 +1,7 @@
 ﻿import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
+import 'package:intl/intl.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -25,6 +26,7 @@ class InstallmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final formattedRemaining = _formatAmount(remainingAmount);
     final total = totalMonths <= 0 ? 1 : totalMonths;
     final done = progressedMonths.clamp(0, total);
     final progress = done / total;
@@ -114,7 +116,7 @@ class InstallmentCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '\u0645\u0628\u0644\u063a \u0628\u0627\u0642\u06cc\u200c\u0645\u0627\u0646\u062f\u0647: $remainingAmount \u062a\u0648\u0645\u0627\u0646',
+                    '\u0645\u0628\u0644\u063a \u0628\u0627\u0642\u06cc\u200c\u0645\u0627\u0646\u062f\u0647: $formattedRemaining \u062a\u0648\u0645\u0627\u0646',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -212,6 +214,24 @@ class InstallmentCard extends StatelessWidget {
       ),
     );
   }
+
+  String _formatAmount(String raw) {
+    final normalized = _normalizeDigits(raw).replaceAll(',', '').trim();
+    final parsed = int.tryParse(normalized);
+    if (parsed == null) return raw;
+    return NumberFormat('#,###').format(parsed);
+  }
+
+  String _normalizeDigits(String input) {
+    const fa = '۰۱۲۳۴۵۶۷۸۹';
+    const ar = '٠١٢٣٤٥٦٧٨٩';
+    var out = input;
+    for (var i = 0; i < 10; i++) {
+      out = out.replaceAll(fa[i], '$i');
+      out = out.replaceAll(ar[i], '$i');
+    }
+    return out;
+  }
 }
 
 class _RingPainter extends CustomPainter {
@@ -255,3 +275,4 @@ class _RingPainter extends CustomPainter {
         oldDelegate.progressColor != progressColor;
   }
 }
+

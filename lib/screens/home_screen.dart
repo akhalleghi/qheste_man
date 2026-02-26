@@ -1,5 +1,4 @@
 ﻿import 'package:flutter/cupertino.dart';
-import 'package:shamsi_date/shamsi_date.dart';
 
 import '../models/finance_items.dart';
 import '../theme/app_colors.dart';
@@ -21,6 +20,18 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sortedInstallments = [...installments]..sort((a, b) {
+      final aCompleted = a.paidInstallmentIndexes.length >= a.durationMonths;
+      final bCompleted = b.paidInstallmentIndexes.length >= b.durationMonths;
+      if (aCompleted != bCompleted) {
+        return aCompleted ? 1 : -1;
+      }
+      return _dateScore(a.nextPaymentDate).compareTo(_dateScore(b.nextPaymentDate));
+    });
+    final nextPaymentLabel = sortedInstallments.isEmpty
+        ? '\u0646\u062f\u0627\u0631\u062f'
+        : sortedInstallments.first.nextPaymentDate;
+
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: Text(
@@ -37,7 +48,10 @@ class HomeScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
           children: [
-            _HomeHeader(installmentCount: installments.length),
+            _HomeHeader(
+              installmentCount: installments.length,
+              nextPaymentLabel: nextPaymentLabel,
+            ),
             const SizedBox(height: AppSpacing.md),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -103,12 +117,12 @@ class HomeScreen extends StatelessWidget {
                 ),
               )
             else
-              ...installments.map(
+              ...sortedInstallments.map(
                 (item) => InstallmentCard(
                   title: item.title,
                   remainingAmount: item.remainingAmount,
                   nextPaymentDate: item.nextPaymentDate,
-                  progressedMonths: _elapsedMonths(item),
+                  progressedMonths: item.paidInstallmentIndexes.length,
                   totalMonths: item.durationMonths,
                   onTap: () {
                     _openDetails(context, item);
@@ -142,9 +156,13 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.installmentCount});
+  const _HomeHeader({
+    required this.installmentCount,
+    required this.nextPaymentLabel,
+  });
 
   final int installmentCount;
+  final String nextPaymentLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -209,10 +227,10 @@ class _HomeHeader extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                const Expanded(
+                Expanded(
                   child: _HeaderStat(
                     title: '\u067e\u0631\u062f\u0627\u062e\u062a \u0628\u0639\u062f\u06cc',
-                    value: '\u06f1\u06f5 \u0627\u0633\u0641\u0646\u062f',
+                    value: nextPaymentLabel,
                   ),
                 ),
               ],
@@ -222,6 +240,15 @@ class _HomeHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+int _dateScore(String value) {
+  final parts = value.split('/');
+  if (parts.length != 3) return 99999999;
+  final y = int.tryParse(parts[0]) ?? 9999;
+  final m = int.tryParse(parts[1]) ?? 12;
+  final d = int.tryParse(parts[2]) ?? 31;
+  return (y * 10000) + (m * 100) + d;
 }
 
 class _HeaderStat extends StatelessWidget {
@@ -263,20 +290,5 @@ class _HeaderStat extends StatelessWidget {
       ),
     );
   }
-}
-
-
-int _elapsedMonths(InstallmentItem item) {
-  final parts = item.firstDueDate.split('/');
-  if (parts.length != 3) return 0;
-  final y = int.tryParse(parts[0]) ?? 0;
-  final m = int.tryParse(parts[1]) ?? 0;
-  if (y <= 0 || m <= 0) return 0;
-
-  final now = Jalali.now();
-  final diff = ((now.year - y) * 12) + (now.month - m) + 1;
-  if (diff < 0) return 0;
-  if (diff > item.durationMonths) return item.durationMonths;
-  return diff;
 }
 

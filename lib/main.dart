@@ -1,16 +1,17 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'data/app_data.dart';
 import 'models/finance_items.dart';
+import 'screens/add_check_screen.dart';
 import 'screens/add_installment_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/my_checks_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/settings_screen.dart';
+import 'services/check_storage.dart';
 import 'services/installment_storage.dart';
 import 'services/reminder_service.dart';
 import 'theme/app_colors.dart';
@@ -63,7 +64,7 @@ class _MyInstallmentsAppState extends State<MyInstallmentsApp> {
       textDirection: TextDirection.rtl,
       child: CupertinoApp(
         debugShowCheckedModeBanner: false,
-        title: 'اقساط من',
+        title: '\u0627\u0642\u0633\u0627\u0637 \u0645\u0646',
         locale: const Locale('fa', 'IR'),
         supportedLocales: const [Locale('fa', 'IR')],
         localizationsDelegates: const [
@@ -114,11 +115,13 @@ class RootTabs extends StatefulWidget {
 class _RootTabsState extends State<RootTabs> {
   int _currentIndex = 0;
   List<InstallmentItem> _installments = const [];
+  List<CheckItem> _checks = const [];
 
   @override
   void initState() {
     super.initState();
     _loadInstallments();
+    _loadChecks();
   }
 
   Future<void> _loadInstallments() async {
@@ -133,6 +136,18 @@ class _RootTabsState extends State<RootTabs> {
     await InstallmentStorage.saveInstallments(_installments);
   }
 
+  Future<void> _loadChecks() async {
+    final items = await CheckStorage.loadChecks();
+    if (!mounted) return;
+    setState(() {
+      _checks = items;
+    });
+  }
+
+  Future<void> _saveChecks() async {
+    await CheckStorage.saveChecks(_checks);
+  }
+
   @override
   Widget build(BuildContext context) {
     final accentColor = _currentIndex == 1
@@ -145,8 +160,12 @@ class _RootTabsState extends State<RootTabs> {
         onInstallmentUpdated: _updateInstallment,
         onInstallmentDeleted: _deleteInstallment,
       ),
-      const MyChecksScreen(),
-      SearchScreen(installments: _installments, checks: AppData.checks),
+      MyChecksScreen(
+        checks: _checks,
+        onCheckDeleted: _deleteCheck,
+        onCheckUpdated: _updateCheck,
+      ),
+      SearchScreen(installments: _installments, checks: _checks),
       SettingsScreen(
         isDarkMode: widget.isDarkMode,
         onDarkModeChanged: widget.onThemeChanged,
@@ -197,7 +216,7 @@ class _RootTabsState extends State<RootTabs> {
                             Expanded(
                               child: _TabItem(
                                 icon: CupertinoIcons.settings,
-                                label: 'تنظیمات',
+                                label: '\u062a\u0646\u0638\u06cc\u0645\u0627\u062a',
                                 accentColor: accentColor,
                                 isActive: _currentIndex == 3,
                                 onTap: () => setState(() => _currentIndex = 3),
@@ -206,7 +225,7 @@ class _RootTabsState extends State<RootTabs> {
                             Expanded(
                               child: _TabItem(
                                 icon: CupertinoIcons.search,
-                                label: 'جستجو',
+                                label: '\u062c\u0633\u062a\u062c\u0648',
                                 accentColor: accentColor,
                                 isActive: _currentIndex == 2,
                                 onTap: () => setState(() => _currentIndex = 2),
@@ -216,7 +235,7 @@ class _RootTabsState extends State<RootTabs> {
                             Expanded(
                               child: _TabItem(
                                 icon: CupertinoIcons.doc_text_fill,
-                                label: 'اقساط',
+                                label: '\u0627\u0642\u0633\u0627\u0637',
                                 accentColor: accentColor,
                                 isActive: _currentIndex == 0,
                                 onTap: () => setState(() => _currentIndex = 0),
@@ -225,7 +244,7 @@ class _RootTabsState extends State<RootTabs> {
                             Expanded(
                               child: _TabItem(
                                 icon: CupertinoIcons.doc_on_clipboard_fill,
-                                label: 'چک ها',
+                                label: '\u0686\u06a9 \u0647\u0627',
                                 accentColor: accentColor,
                                 isActive: _currentIndex == 1,
                                 onTap: () => setState(() => _currentIndex = 1),
@@ -299,7 +318,7 @@ class _RootTabsState extends State<RootTabs> {
                 ),
                 const SizedBox(height: 14),
                 _AddOptionButton(
-                  title: 'افزودن قسط جدید',
+                  title: '\u0627\u0641\u0632\u0648\u062f\u0646 \u0642\u0633\u0637 \u062c\u062f\u06cc\u062f',
                   icon: CupertinoIcons.doc_text_fill,
                   iconColor: AppColors.primary,
                   iconBackground: AppColors.primary.withValues(alpha: 0.14),
@@ -307,13 +326,13 @@ class _RootTabsState extends State<RootTabs> {
                 ),
                 const SizedBox(height: 10),
                 _AddOptionButton(
-                  title: 'افزودن چک جدید',
+                  title: '\u0627\u0641\u0632\u0648\u062f\u0646 \u0686\u06a9 \u062c\u062f\u06cc\u062f',
                   icon: CupertinoIcons.doc_on_clipboard_fill,
                   iconColor: AppColors.checksAccent,
                   iconBackground: AppColors.checksAccent.withValues(
                     alpha: 0.14,
                   ),
-                  onTap: () => Navigator.of(popupContext).pop(),
+                  onTap: () => _openAddCheckForm(popupContext),
                 ),
               ],
             ),
@@ -339,6 +358,21 @@ class _RootTabsState extends State<RootTabs> {
     await ReminderService.scheduleForInstallment(created);
   }
 
+  Future<void> _openAddCheckForm(BuildContext popupContext) async {
+    Navigator.of(popupContext).pop();
+    final created = await Navigator.of(context).push<CheckItem>(
+      CupertinoPageRoute<CheckItem>(
+        builder: (_) => const AddCheckScreen(),
+      ),
+    );
+    if (!mounted || created == null) return;
+    setState(() {
+      _checks = [..._checks, created];
+      _currentIndex = 1;
+    });
+    await _saveChecks();
+  }
+
   void _updateInstallment(InstallmentItem updated) {
     setState(() {
       _installments = _installments
@@ -355,6 +389,22 @@ class _RootTabsState extends State<RootTabs> {
           .toList();
     });
     _saveInstallments();
+  }
+
+  void _deleteCheck(String checkId) {
+    setState(() {
+      _checks = _checks.where((item) => item.id != checkId).toList();
+    });
+    _saveChecks();
+  }
+
+  void _updateCheck(CheckItem updated) {
+    setState(() {
+      _checks = _checks
+          .map((item) => item.id == updated.id ? updated : item)
+          .toList();
+    });
+    _saveChecks();
   }
 }
 
@@ -473,3 +523,6 @@ class _AddOptionButton extends StatelessWidget {
     );
   }
 }
+
+
+
