@@ -1,4 +1,5 @@
-﻿import 'dart:ui';
+﻿import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -89,10 +90,220 @@ class _MyInstallmentsAppState extends State<MyInstallmentsApp> {
             dateTimePickerTextStyle: TextStyle(fontFamily: 'Vazirmatn'),
           ),
         ),
-        home: RootTabs(
+        home: AppStartupGate(
           isDarkMode: _isDarkMode,
           onThemeChanged: _onThemeChanged,
         ),
+      ),
+    );
+  }
+}
+
+
+
+class AppStartupGate extends StatefulWidget {
+  const AppStartupGate({
+    super.key,
+    required this.isDarkMode,
+    required this.onThemeChanged,
+  });
+
+  final bool isDarkMode;
+  final ValueChanged<bool> onThemeChanged;
+
+  @override
+  State<AppStartupGate> createState() => _AppStartupGateState();
+}
+
+class _AppStartupGateState extends State<AppStartupGate> {
+  bool _showApp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Timer(const Duration(milliseconds: 2600), () {
+      if (!mounted) return;
+      setState(() => _showApp = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 650),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      child: _showApp
+          ? RootTabs(
+              key: const ValueKey('app_root'),
+              isDarkMode: widget.isDarkMode,
+              onThemeChanged: widget.onThemeChanged,
+            )
+          : const _StartupScreen(key: ValueKey('startup')),
+    );
+  }
+}
+
+class _StartupScreen extends StatefulWidget {
+  const _StartupScreen({super.key});
+
+  @override
+  State<_StartupScreen> createState() => _StartupScreenState();
+}
+
+class _StartupScreenState extends State<_StartupScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
+    final surface = isDark ? const Color(0xFF0B0B0F) : const Color(0xFFF2F2F7);
+
+    return CupertinoPageScaffold(
+      backgroundColor: surface,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.primary.withValues(alpha: isDark ? 0.24 : 0.12),
+                    AppColors.checksAccent.withValues(alpha: isDark ? 0.18 : 0.10),
+                    surface,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ScaleTransition(
+                    scale: Tween<double>(begin: 0.96, end: 1.04).animate(
+                      CurvedAnimation(
+                        parent: _controller,
+                        curve: Curves.easeInOut,
+                      ),
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.white.withValues(
+                          alpha: isDark ? 0.10 : 0.72,
+                        ),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.cardShadow(context),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        '\u0627\u0642\u0633\u0627\u0637 \u0645\u0646',
+                        style: TextStyle(
+                          fontFamily: 'Vazirmatn',
+                          fontSize: 30,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.3,
+                          color: AppColors.titleText(context),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    '\u0645\u062f\u06cc\u0631\u06cc\u062a \u0627\u0642\u0633\u0627\u0637 \u0648 \u0686\u06a9',
+                    style: TextStyle(
+                      fontFamily: 'Vazirmatn',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.titleText(context),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '\u062f\u0631 \u062d\u0627\u0644 \u0622\u0645\u0627\u062f\u0647\u200c\u0633\u0627\u0632\u06cc \u062f\u0627\u0634\u0628\u0648\u0631\u062f \u0634\u0645\u0627...',
+                    style: TextStyle(
+                      fontFamily: 'Vazirmatn',
+                      fontSize: 13,
+                      color: AppColors.secondaryText(context),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: 130,
+                    child: AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, child) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(3, (index) {
+                            final phase = (_controller.value + (index * 0.2)) % 1.0;
+                            final scale = 0.75 + (phase * 0.35);
+                            final opacity = 0.45 + (phase * 0.55);
+                            final color = index == 1
+                                ? AppColors.primary
+                                : AppColors.checksAccent;
+                            return Opacity(
+                              opacity: opacity.clamp(0.0, 1.0),
+                              child: Transform.scale(
+                                scale: scale,
+                                child: Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 80),
+                  Text(
+                    '\u062a\u06cc\u0645 \u062a\u0648\u0633\u0639\u0647 \u0646\u0631\u0645 \u0627\u0641\u0632\u0627\u0631 \u0628\u06cc\u0632\u062a\u0648',
+                    style: TextStyle(
+                      fontFamily: 'Vazirmatn',
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.secondaryText(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
