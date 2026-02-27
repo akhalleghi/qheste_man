@@ -9,6 +9,7 @@ import 'models/finance_items.dart';
 import 'screens/add_check_screen.dart';
 import 'screens/add_installment_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/introduction_screen.dart';
 import 'screens/my_checks_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/settings_screen.dart';
@@ -32,20 +33,26 @@ class MyInstallmentsApp extends StatefulWidget {
 
 class _MyInstallmentsAppState extends State<MyInstallmentsApp> {
   static const _darkModeKey = 'dark_mode_enabled';
+  static const _introSeenKey = 'intro_seen_v1';
   bool _isDarkMode = false;
+  bool _introSeen = false;
+  bool _prefsLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadThemeMode();
+    _loadAppPrefs();
   }
 
-  Future<void> _loadThemeMode() async {
+  Future<void> _loadAppPrefs() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getBool(_darkModeKey) ?? false;
+    final savedTheme = prefs.getBool(_darkModeKey) ?? false;
+    final introSeen = prefs.getBool(_introSeenKey) ?? false;
     if (!mounted) return;
     setState(() {
-      _isDarkMode = saved;
+      _isDarkMode = savedTheme;
+      _introSeen = introSeen;
+      _prefsLoaded = true;
     });
   }
 
@@ -55,6 +62,14 @@ class _MyInstallmentsAppState extends State<MyInstallmentsApp> {
     });
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_darkModeKey, value);
+  }
+
+  Future<void> _onIntroCompleted() async {
+    setState(() {
+      _introSeen = true;
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_introSeenKey, true);
   }
 
   @override
@@ -90,10 +105,14 @@ class _MyInstallmentsAppState extends State<MyInstallmentsApp> {
             dateTimePickerTextStyle: TextStyle(fontFamily: 'Vazirmatn'),
           ),
         ),
-        home: AppStartupGate(
-          isDarkMode: _isDarkMode,
-          onThemeChanged: _onThemeChanged,
-        ),
+        home: !_prefsLoaded
+            ? const CupertinoPageScaffold(child: SizedBox.shrink())
+            : (!_introSeen
+                  ? IntroductionScreen(onCompleted: _onIntroCompleted)
+                  : AppStartupGate(
+                      isDarkMode: _isDarkMode,
+                      onThemeChanged: _onThemeChanged,
+                    )),
       ),
     );
   }
