@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/finance_items.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
+import 'check_reports_screen.dart';
 import 'check_details_screen.dart';
 
 class MyChecksScreen extends StatelessWidget {
@@ -46,7 +47,11 @@ class MyChecksScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
           children: [
-            _ChecksHeader(checkCount: checks.length, firstDueDate: firstDue),
+            _ChecksHeader(
+              checkCount: checks.length,
+              firstDueDate: firstDue,
+              onReportTap: () => _openReports(context),
+            ),
             const SizedBox(height: AppSpacing.md),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -129,13 +134,26 @@ class MyChecksScreen extends StatelessWidget {
       ),
     );
   }
+
+  void _openReports(BuildContext context) {
+    Navigator.of(context).push(
+      CupertinoPageRoute<void>(
+        builder: (_) => CheckReportsScreen(checks: checks),
+      ),
+    );
+  }
 }
 
 class _ChecksHeader extends StatelessWidget {
-  const _ChecksHeader({required this.checkCount, required this.firstDueDate});
+  const _ChecksHeader({
+    required this.checkCount,
+    required this.firstDueDate,
+    required this.onReportTap,
+  });
 
   final int checkCount;
   final String firstDueDate;
+  final VoidCallback onReportTap;
 
   @override
   Widget build(BuildContext context) {
@@ -186,6 +204,32 @@ class _ChecksHeader extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: CupertinoColors.white,
                     ),
+                  ),
+                ),
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  color: const Color(0x26FFFFFF),
+                  borderRadius: BorderRadius.circular(10),
+                  onPressed: onReportTap,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.chart_pie_fill,
+                        size: 14,
+                        color: CupertinoColors.white,
+                      ),
+                      SizedBox(width: 5),
+                      Text(
+                        '\u06af\u0632\u0627\u0631\u0634',
+                        style: TextStyle(
+                          fontFamily: 'Vazirmatn',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: CupertinoColors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

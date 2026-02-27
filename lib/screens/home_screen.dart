@@ -4,6 +4,7 @@ import '../models/finance_items.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/installment_card.dart';
+import 'installment_reports_screen.dart';
 import 'installment_details_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -51,6 +52,7 @@ class HomeScreen extends StatelessWidget {
             _HomeHeader(
               installmentCount: installments.length,
               nextPaymentLabel: nextPaymentLabel,
+              onReportTap: () => _openReports(context),
             ),
             const SizedBox(height: AppSpacing.md),
             Padding(
@@ -153,16 +155,26 @@ class HomeScreen extends StatelessWidget {
       onInstallmentUpdated(result.updatedItem!);
     }
   }
+
+  void _openReports(BuildContext context) {
+    Navigator.of(context).push(
+      CupertinoPageRoute<void>(
+        builder: (_) => InstallmentReportsScreen(installments: installments),
+      ),
+    );
+  }
 }
 
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader({
     required this.installmentCount,
     required this.nextPaymentLabel,
+    required this.onReportTap,
   });
 
   final int installmentCount;
   final String nextPaymentLabel;
+  final VoidCallback onReportTap;
 
   @override
   Widget build(BuildContext context) {
@@ -213,6 +225,32 @@ class _HomeHeader extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: CupertinoColors.white,
                     ),
+                  ),
+                ),
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  color: const Color(0x26FFFFFF),
+                  borderRadius: BorderRadius.circular(10),
+                  onPressed: onReportTap,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.chart_pie_fill,
+                        size: 14,
+                        color: CupertinoColors.white,
+                      ),
+                      SizedBox(width: 5),
+                      Text(
+                        '\u06af\u0632\u0627\u0631\u0634',
+                        style: TextStyle(
+                          fontFamily: 'Vazirmatn',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: CupertinoColors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

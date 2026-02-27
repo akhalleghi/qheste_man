@@ -14,13 +14,13 @@ import 'screens/my_checks_screen.dart';
 import 'screens/search_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/check_storage.dart';
+import 'services/backup_service.dart';
 import 'services/installment_storage.dart';
 import 'services/reminder_service.dart';
 import 'theme/app_colors.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ReminderService.initialize();
   runApp(const MyInstallmentsApp());
 }
 
@@ -41,7 +41,16 @@ class _MyInstallmentsAppState extends State<MyInstallmentsApp> {
   @override
   void initState() {
     super.initState();
+    _initializeServices();
     _loadAppPrefs();
+  }
+
+  Future<void> _initializeServices() async {
+    try {
+      await ReminderService.initialize();
+    } catch (_) {
+      // Never block app startup if a background service fails to initialize.
+    }
   }
 
   Future<void> _loadAppPrefs() async {
@@ -399,6 +408,8 @@ class _RootTabsState extends State<RootTabs> {
       SettingsScreen(
         isDarkMode: widget.isDarkMode,
         onDarkModeChanged: widget.onThemeChanged,
+        onExportBackup: _exportBackup,
+        onImportBackup: _importBackup,
       ),
     ];
 
@@ -635,6 +646,42 @@ class _RootTabsState extends State<RootTabs> {
           .toList();
     });
     _saveChecks();
+  }
+
+  Future<String> _exportBackup() async {
+    final path = await BackupService.exportData(
+      installments: _installments,
+      checks: _checks,
+    );
+    return path;
+  }
+
+  Future<String> _importBackup() async {
+    final result = await BackupService.importFromPicker();
+    if (result == null) {
+      return '';
+    }
+
+    setState(() {
+      _installments = result.installments;
+      _checks = result.checks;
+      if (_currentIndex != 3) {
+        _currentIndex = 0;
+      }
+    });
+
+    await _saveInstallments();
+    await _saveChecks();
+
+    for (final installment in _installments) {
+      try {
+        await ReminderService.scheduleForInstallment(installment);
+      } catch (_) {
+        // Keep import successful even if reminder scheduling fails on device.
+      }
+    }
+
+    return result.path;
   }
 }
 

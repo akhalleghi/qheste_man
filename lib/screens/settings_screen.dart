@@ -10,10 +10,14 @@ class SettingsScreen extends StatefulWidget {
     super.key,
     required this.isDarkMode,
     required this.onDarkModeChanged,
+    required this.onExportBackup,
+    required this.onImportBackup,
   });
 
   final bool isDarkMode;
   final ValueChanged<bool> onDarkModeChanged;
+  final Future<String> Function() onExportBackup;
+  final Future<String> Function() onImportBackup;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -90,6 +94,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 _navigationRow(
+                  title: '\u067e\u0634\u062a\u06cc\u0628\u0627\u0646\u200c\u06af\u06cc\u0631\u06cc \u0627\u0632 \u0627\u0637\u0644\u0627\u0639\u0627\u062a',
+                  onTap: () => _showBackupSheet(context),
+                ),
+                _navigationRow(
                   title: '\u062f\u0631\u0628\u0627\u0631\u0647 \u0628\u0631\u0646\u0627\u0645\u0647',
                   onTap: () {
                     Navigator.of(context).push(
@@ -162,6 +170,135 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showBackupSheet(BuildContext context) {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (sheetContext) => CupertinoActionSheet(
+        title: const Text(
+          '\u067e\u0634\u062a\u06cc\u0628\u0627\u0646\u200c\u06af\u06cc\u0631\u06cc',
+          style: TextStyle(fontFamily: 'Vazirmatn'),
+        ),
+        message: const Text(
+          '\u06cc\u06a9\u06cc \u0627\u0632 \u06af\u0632\u06cc\u0646\u0647\u200c\u0647\u0627 \u0631\u0627 \u0627\u0646\u062a\u062e\u0627\u0628 \u06a9\u0646\u06cc\u062f.',
+          style: TextStyle(fontFamily: 'Vazirmatn'),
+        ),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () async {
+              Navigator.of(sheetContext).pop();
+              await _handleExport();
+            },
+            child: const Text(
+              '\u062e\u0631\u0648\u062c \u0627\u0637\u0644\u0627\u0639\u0627\u062a',
+              style: TextStyle(fontFamily: 'Vazirmatn'),
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () async {
+              Navigator.of(sheetContext).pop();
+              await _handleImport();
+            },
+            child: const Text(
+              '\u0648\u0631\u0648\u062f \u0627\u0637\u0644\u0627\u0639\u0627\u062a',
+              style: TextStyle(fontFamily: 'Vazirmatn'),
+            ),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.of(sheetContext).pop(),
+          child: const Text(
+            '\u0627\u0646\u0635\u0631\u0627\u0641',
+            style: TextStyle(fontFamily: 'Vazirmatn'),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleExport() async {
+    try {
+      final path = await widget.onExportBackup();
+      if (!mounted) return;
+      final inDownloads = path.contains('/Download/') || path.contains('\\Download\\');
+      final msg = inDownloads
+          ? '\u0641\u0627\u06cc\u0644 \u067e\u0634\u062a\u06cc\u0628\u0627\u0646 \u062f\u0631 \u067e\u0648\u0634\u0647 Downloads \u0630\u062e\u06cc\u0631\u0647 \u0634\u062f:\n$path'
+          : '\u0641\u0627\u06cc\u0644 \u067e\u0634\u062a\u06cc\u0628\u0627\u0646 \u0633\u0627\u062e\u062a\u0647 \u0634\u062f:\n$path';
+      await _showInfoDialog(
+        context,
+        title: '\u062e\u0631\u0648\u062c \u0645\u0648\u0641\u0642',
+        message: msg,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      await _showInfoDialog(
+        context,
+        title: '\u062e\u0637\u0627',
+        message:
+            '\u062f\u0631 \u0633\u0627\u062e\u062a \u0641\u0627\u06cc\u0644 \u067e\u0634\u062a\u06cc\u0628\u0627\u0646 \u0645\u0634\u06a9\u0644\u06cc \u0627\u06cc\u062c\u0627\u062f \u0634\u062f.',
+      );
+    }
+  }
+
+  Future<void> _handleImport() async {
+    try {
+      final importedPath = await widget.onImportBackup();
+      if (!mounted) return;
+      if (importedPath.isEmpty) {
+        await _showInfoDialog(
+          context,
+          title: '\u0644\u063a\u0648 \u0634\u062f',
+          message: '\u0641\u0627\u06cc\u0644\u06cc \u0627\u0646\u062a\u062e\u0627\u0628 \u0646\u0634\u062f.',
+        );
+        return;
+      }
+      await _showInfoDialog(
+        context,
+        title: '\u0648\u0631\u0648\u062f \u0645\u0648\u0641\u0642',
+        message:
+            '\u0627\u0637\u0644\u0627\u0639\u0627\u062a \u0628\u0627 \u0645\u0648\u0641\u0642\u06cc\u062a \u0627\u0632 \u0641\u0627\u06cc\u0644 \u0632\u06cc\u0631 \u0648\u0627\u0631\u062f \u0634\u062f:\n$importedPath',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final reason = e.toString();
+      await _showInfoDialog(
+        context,
+        title: '\u062e\u0637\u0627',
+        message:
+            '\u0641\u0627\u06cc\u0644 \u0648\u0631\u0648\u062f\u06cc \u0642\u0627\u0628\u0644 \u067e\u0631\u062f\u0627\u0632\u0634 \u0646\u06cc\u0633\u062a.\n$reason',
+      );
+    }
+  }
+
+  Future<void> _showInfoDialog(
+    BuildContext context, {
+    required String title,
+    required String message,
+  }) async {
+    await showCupertinoDialog<void>(
+      context: context,
+      builder: (dctx) => CupertinoAlertDialog(
+        title: Text(
+          title,
+          style: const TextStyle(fontFamily: 'Vazirmatn'),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontFamily: 'Vazirmatn'),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dctx).pop(),
+            child: const Text(
+              '\u0628\u0633\u062a\u0646',
+              style: TextStyle(fontFamily: 'Vazirmatn'),
+            ),
+          ),
+        ],
       ),
     );
   }
