@@ -182,13 +182,13 @@ class _IntroductionScreenState extends State<IntroductionScreen>
                     onPageChanged: (v) => setState(() => _index = v),
                     children: [
                       _FancySlide(
-                        vectorAsset: 'assets/intro/installments.svg',
+                        backgroundImage: 'assets/img/1.jpg',
                         title: '\u0645\u062f\u06cc\u0631\u06cc\u062a \u0627\u0642\u0633\u0627\u0637 \u0628\u0627 \u06cc\u06a9 \u062f\u06cc\u062f \u06a9\u0627\u0645\u0644',
                         description:
                             '\u0648\u0627\u0645\u200c\u0647\u0627\u060c \u0645\u0628\u0627\u0644\u063a\u060c \u0633\u0631\u0631\u0633\u06cc\u062f\u0647\u0627 \u0648 \u067e\u06cc\u0634\u0631\u0641\u062a \u067e\u0631\u062f\u0627\u062e\u062a \u0631\u0627 \u062f\u0631 \u06cc\u06a9 \u062a\u0627\u06cc\u0645\u200c\u0644\u0627\u06cc\u0646 \u0634\u0641\u0627\u0641 \u0628\u0628\u06cc\u0646\u06cc\u062f.',
                       ),
                       _FancySlide(
-                        vectorAsset: 'assets/intro/checks.svg',
+                        backgroundImage: 'assets/img/2.jpg',
                         title: '\u06a9\u0646\u062a\u0631\u0644 \u062d\u0631\u0641\u0647\u200c\u0627\u06cc \u0686\u06a9\u200c\u0647\u0627',
                         description:
                             '\u0686\u06a9\u200c\u0647\u0627\u06cc \u062f\u0631\u06cc\u0627\u0641\u062a\u06cc \u0648 \u067e\u0631\u062f\u0627\u062e\u062a\u06cc \u0631\u0627 \u0628\u0627 \u0648\u0636\u0639\u06cc\u062a \u062f\u0642\u06cc\u0642 \u0648 \u0633\u0631\u0631\u0633\u06cc\u062f\u0647\u0627\u06cc \u0646\u0632\u062f\u06cc\u06a9 \u0645\u062f\u06cc\u0631\u06cc\u062a \u06a9\u0646\u06cc\u062f.',
@@ -259,12 +259,12 @@ class _IntroductionScreenState extends State<IntroductionScreen>
 
 class _FancySlide extends StatelessWidget {
   const _FancySlide({
-    required this.vectorAsset,
+    required this.backgroundImage,
     required this.title,
     required this.description,
   });
 
-  final String vectorAsset;
+  final String backgroundImage;
   final String title;
   final String description;
 
@@ -277,22 +277,29 @@ class _FancySlide extends StatelessWidget {
         children: [
           Container(
             width: 250,
-            padding: const EdgeInsets.all(22),
+            height: 250,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.sectionBackground(context).withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(24),
+              color: AppColors.sectionBackground(context).withValues(alpha: 0.84),
+              borderRadius: BorderRadius.circular(28),
               border: Border.all(color: AppColors.divider(context), width: 0.7),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cardShadow(context),
+                  blurRadius: 26,
+                  offset: const Offset(0, 12),
+                ),
+              ],
             ),
-            child: SvgPicture.asset(
-              vectorAsset,
-              height: 150,
-              colorFilter: ColorFilter.mode(
-                AppColors.titleText(context),
-                BlendMode.srcIn,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                backgroundImage,
+                fit: BoxFit.cover,
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
           Text(
             title,
             textAlign: TextAlign.center,

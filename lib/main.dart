@@ -352,15 +352,23 @@ class RootTabs extends StatefulWidget {
 }
 
 class _RootTabsState extends State<RootTabs> {
-  int _currentIndex = 0;
+  int _currentIndex = 2;
   List<InstallmentItem> _installments = const [];
   List<CheckItem> _checks = const [];
+  late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
     _loadInstallments();
     _loadChecks();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadInstallments() async {
@@ -389,11 +397,18 @@ class _RootTabsState extends State<RootTabs> {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = _currentIndex == 1
+    final accentColor = _currentIndex == 3
         ? AppColors.checksAccent
         : AppColors.primary;
 
     final screens = [
+      SettingsScreen(
+        isDarkMode: widget.isDarkMode,
+        onDarkModeChanged: widget.onThemeChanged,
+        onExportBackup: _exportBackup,
+        onImportBackup: _importBackup,
+      ),
+      SearchScreen(installments: _installments, checks: _checks),
       HomeScreen(
         installments: _installments,
         onInstallmentUpdated: _updateInstallment,
@@ -404,13 +419,6 @@ class _RootTabsState extends State<RootTabs> {
         onCheckDeleted: _deleteCheck,
         onCheckUpdated: _updateCheck,
       ),
-      SearchScreen(installments: _installments, checks: _checks),
-      SettingsScreen(
-        isDarkMode: widget.isDarkMode,
-        onDarkModeChanged: widget.onThemeChanged,
-        onExportBackup: _exportBackup,
-        onImportBackup: _importBackup,
-      ),
     ];
 
     return CupertinoPageScaffold(
@@ -418,7 +426,15 @@ class _RootTabsState extends State<RootTabs> {
         children: [
           Padding(
             padding: const EdgeInsets.only(bottom: 110),
-            child: IndexedStack(index: _currentIndex, children: screens),
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: (index) {
+                if (!mounted) return;
+                setState(() => _currentIndex = index);
+              },
+              physics: const BouncingScrollPhysics(),
+              children: screens,
+            ),
           ),
           Positioned(
             left: 20,
@@ -459,8 +475,8 @@ class _RootTabsState extends State<RootTabs> {
                                 icon: CupertinoIcons.settings,
                                 label: '\u062a\u0646\u0638\u06cc\u0645\u0627\u062a',
                                 accentColor: accentColor,
-                                isActive: _currentIndex == 3,
-                                onTap: () => setState(() => _currentIndex = 3),
+                                isActive: _currentIndex == 0,
+                                onTap: () => _goToTab(0),
                               ),
                             ),
                             Expanded(
@@ -468,8 +484,8 @@ class _RootTabsState extends State<RootTabs> {
                                 icon: CupertinoIcons.search,
                                 label: '\u062c\u0633\u062a\u062c\u0648',
                                 accentColor: accentColor,
-                                isActive: _currentIndex == 2,
-                                onTap: () => setState(() => _currentIndex = 2),
+                                isActive: _currentIndex == 1,
+                                onTap: () => _goToTab(1),
                               ),
                             ),
                             const SizedBox(width: 78),
@@ -478,8 +494,8 @@ class _RootTabsState extends State<RootTabs> {
                                 icon: CupertinoIcons.doc_text_fill,
                                 label: '\u0627\u0642\u0633\u0627\u0637',
                                 accentColor: accentColor,
-                                isActive: _currentIndex == 0,
-                                onTap: () => setState(() => _currentIndex = 0),
+                                isActive: _currentIndex == 2,
+                                onTap: () => _goToTab(2),
                               ),
                             ),
                             Expanded(
@@ -487,8 +503,8 @@ class _RootTabsState extends State<RootTabs> {
                                 icon: CupertinoIcons.doc_on_clipboard_fill,
                                 label: '\u0686\u06a9 \u0647\u0627',
                                 accentColor: accentColor,
-                                isActive: _currentIndex == 1,
-                                onTap: () => setState(() => _currentIndex = 1),
+                                isActive: _currentIndex == 3,
+                                onTap: () => _goToTab(3),
                               ),
                             ),
                           ],
@@ -593,8 +609,8 @@ class _RootTabsState extends State<RootTabs> {
     if (!mounted || created == null) return;
     setState(() {
       _installments = [..._installments, created];
-      _currentIndex = 0;
     });
+    _goToTab(2);
     await _saveInstallments();
     await ReminderService.scheduleForInstallment(created);
   }
@@ -609,8 +625,8 @@ class _RootTabsState extends State<RootTabs> {
     if (!mounted || created == null) return;
     setState(() {
       _checks = [..._checks, created];
-      _currentIndex = 1;
     });
+    _goToTab(3);
     await _saveChecks();
   }
 
@@ -665,10 +681,10 @@ class _RootTabsState extends State<RootTabs> {
     setState(() {
       _installments = result.installments;
       _checks = result.checks;
-      if (_currentIndex != 3) {
-        _currentIndex = 0;
-      }
     });
+    if (_currentIndex != 3) {
+      _goToTab(2);
+    }
 
     await _saveInstallments();
     await _saveChecks();
@@ -682,6 +698,19 @@ class _RootTabsState extends State<RootTabs> {
     }
 
     return result.path;
+  }
+
+  void _goToTab(int index) {
+    if (!mounted) return;
+    if (index < 0 || index > 3) return;
+    if (_currentIndex != index) {
+      setState(() => _currentIndex = index);
+    }
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
   }
 }
 
@@ -706,6 +735,7 @@ class _TabItem extends StatelessWidget {
     final inactiveColor = CupertinoColors.white;
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: SizedBox(
         height: 74,
