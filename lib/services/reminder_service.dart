@@ -18,6 +18,7 @@ class ReminderService {
   static Future<void> initialize() async {
     if (_initialized) return;
     tz_data.initializeTimeZones();
+    _configureLocalTimeZone();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings();
@@ -26,18 +27,34 @@ class ReminderService {
     _initialized = true;
   }
 
+  /// Re-schedules push/calendar reminders for all stored installments.
+  static Future<void> rescheduleAll(List<InstallmentItem> installments) async {
+    await initialize();
+    for (final installment in installments) {
+      await scheduleForInstallment(installment);
+    }
+  }
+
   static Future<void> scheduleForInstallment(
     InstallmentItem installment,
   ) async {
     await initialize();
+    await _cancelInstallmentNotifications(installment);
+
     final schedule = _buildSchedule(installment);
 
     if (installment.notifyPush) {
       await _requestNotificationPermission();
+      await _requestExactAlarmPermissionIfNeeded();
+      final scheduleMode = await _resolveAndroidScheduleMode();
+
       for (var i = 0; i < schedule.length; i++) {
+        if (installment.paidInstallmentIndexes.contains(i)) continue;
+
         final item = schedule[i];
-        final trigger = item.dueDate.subtract(const Duration(hours: 9));
+        final trigger = _reminderTriggerFor(item.dueDate);
         if (trigger.isBefore(DateTime.now())) continue;
+
         final id = _notificationId(installment.id, i);
         await _notifications.zonedSchedule(
           id,
@@ -54,7 +71,7 @@ class ReminderService {
             ),
             iOS: DarwinNotificationDetails(),
           ),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          androidScheduleMode: scheduleMode,
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
           matchDateTimeComponents: null,
@@ -88,6 +105,15 @@ class ReminderService {
     return true;
   }
 
+  static void _configureLocalTimeZone() {
+    try {
+      // App uses Jalali dates and fa_IR; schedule in Iran standard time.
+      tz.setLocalLocation(tz.getLocation('Asia/Tehran'));
+    } catch (_) {
+      // Keep package default if lookup fails.
+    }
+  }
+
   static Future<void> _requestNotificationPermission() async {
     final android = _notifications
         .resolvePlatformSpecificImplementation<
@@ -99,6 +125,49 @@ class ReminderService {
           IOSFlutterLocalNotificationsPlugin
         >();
     await ios?.requestPermissions(alert: true, badge: true, sound: true);
+  }
+
+  static Future<void> _requestExactAlarmPermissionIfNeeded() async {
+    final android = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) return;
+
+    final canSchedule = await android.canScheduleExactNotifications();
+    if (canSchedule == false) {
+      await android.requestExactAlarmsPermission();
+    }
+  }
+
+  static Future<AndroidScheduleMode> _resolveAndroidScheduleMode() async {
+    final android = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android == null) {
+      return AndroidScheduleMode.exactAllowWhileIdle;
+    }
+
+    final canSchedule = await android.canScheduleExactNotifications();
+    if (canSchedule == true) {
+      return AndroidScheduleMode.exactAllowWhileIdle;
+    }
+    return AndroidScheduleMode.inexactAllowWhileIdle;
+  }
+
+  static Future<void> _cancelInstallmentNotifications(
+    InstallmentItem installment,
+  ) async {
+    for (var i = 0; i < installment.durationMonths; i++) {
+      await _notifications.cancel(_notificationId(installment.id, i));
+    }
+  }
+
+  /// One day before due date at 09:00 local time (aligned with calendar reminder).
+  static DateTime _reminderTriggerFor(DateTime dueDate) {
+    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    return dueDay.subtract(const Duration(days: 1)).add(const Duration(hours: 9));
   }
 
   static Future<void> _insertCalendarEvents(
@@ -120,6 +189,8 @@ class ReminderService {
     );
 
     for (var i = 0; i < schedule.length; i++) {
+      if (installment.paidInstallmentIndexes.contains(i)) continue;
+
       final item = schedule[i];
       if (item.dueDate.isBefore(DateTime.now())) continue;
       final event = Event(

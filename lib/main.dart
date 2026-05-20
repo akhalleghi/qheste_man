@@ -377,6 +377,11 @@ class _RootTabsState extends State<RootTabs> {
     setState(() {
       _installments = items;
     });
+    try {
+      await ReminderService.rescheduleAll(items);
+    } catch (_) {
+      // Never block UI if reminder scheduling fails on device.
+    }
   }
 
   Future<void> _saveInstallments() async {
