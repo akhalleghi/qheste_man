@@ -15,6 +15,9 @@ class ReminderService {
   static final DeviceCalendarPlugin _calendar = DeviceCalendarPlugin();
   static bool _initialized = false;
 
+  static const _eventMarkerPrefix = 'bizto_installment:';
+  static const _eventRefSeparator = '::';
+
   static Future<void> initialize() async {
     if (_initialized) return;
     tz_data.initializeTimeZones();
@@ -28,20 +31,27 @@ class ReminderService {
   }
 
   /// Re-schedules push/calendar reminders for all stored installments.
-  static Future<void> rescheduleAll(List<InstallmentItem> installments) async {
+  static Future<List<InstallmentItem>> rescheduleAll(
+    List<InstallmentItem> installments,
+  ) async {
     await initialize();
+    final updated = <InstallmentItem>[];
     for (final installment in installments) {
-      await scheduleForInstallment(installment);
+      updated.add(await scheduleForInstallment(installment));
     }
+    return updated;
   }
 
-  static Future<void> scheduleForInstallment(
+  /// Schedules reminders and returns installment with updated calendar refs.
+  static Future<InstallmentItem> scheduleForInstallment(
     InstallmentItem installment,
   ) async {
     await initialize();
     await _cancelInstallmentNotifications(installment);
+    await _removeCalendarEvents(installment);
 
     final schedule = _buildSchedule(installment);
+    var result = installment.copyWith(calendarEventRefs: const []);
 
     if (installment.notifyPush) {
       await _requestNotificationPermission();
@@ -80,8 +90,18 @@ class ReminderService {
     }
 
     if (installment.notifyCalendar) {
-      await _insertCalendarEvents(installment, schedule);
+      final refs = await _syncCalendarEvents(installment, schedule);
+      result = result.copyWith(calendarEventRefs: refs);
     }
+
+    return result;
+  }
+
+  /// Cancels notifications and removes calendar events for one installment.
+  static Future<void> cancelForInstallment(InstallmentItem installment) async {
+    await initialize();
+    await _cancelInstallmentNotifications(installment);
+    await _removeCalendarEvents(installment);
   }
 
   static Future<bool> sendTestNotification() async {
@@ -107,7 +127,6 @@ class ReminderService {
 
   static void _configureLocalTimeZone() {
     try {
-      // App uses Jalali dates and fa_IR; schedule in Iran standard time.
       tz.setLocalLocation(tz.getLocation('Asia/Tehran'));
     } catch (_) {
       // Keep package default if lookup fails.
@@ -164,49 +183,133 @@ class ReminderService {
     }
   }
 
-  /// One day before due date at 09:00 local time (aligned with calendar reminder).
   static DateTime _reminderTriggerFor(DateTime dueDate) {
     final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
     return dueDay.subtract(const Duration(days: 1)).add(const Duration(hours: 9));
   }
 
-  static Future<void> _insertCalendarEvents(
-    InstallmentItem installment,
-    List<_DueItem> schedule,
-  ) async {
-    final status = await Permission.calendarWriteOnly.request();
-    if (!status.isGranted) {
-      final fallback = await Permission.calendarFullAccess.request();
-      if (!fallback.isGranted) return;
+  static Future<bool> _ensureCalendarPermissions() async {
+    final pluginResult = await _calendar.requestPermissions();
+    if (pluginResult.isSuccess && pluginResult.data == true) {
+      return true;
     }
 
+    var write = await Permission.calendarWriteOnly.request();
+    if (write.isGranted) return true;
+
+    final full = await Permission.calendarFullAccess.request();
+    return full.isGranted;
+  }
+
+  static Future<Calendar?> _pickWritableCalendar() async {
     final calendarsResult = await _calendar.retrieveCalendars();
     final calendars = calendarsResult.data;
-    if (calendars == null || calendars.isEmpty) return;
-    final target = calendars.firstWhere(
+    if (calendars == null || calendars.isEmpty) return null;
+
+    return calendars.firstWhere(
       (c) => c.isReadOnly != true,
       orElse: () => calendars.first,
     );
+  }
+
+  static Future<void> _removeCalendarEvents(InstallmentItem installment) async {
+    if (!await _ensureCalendarPermissions()) return;
+
+    for (final ref in installment.calendarEventRefs) {
+      final parsed = _parseEventRef(ref);
+      if (parsed == null) continue;
+      await _calendar.deleteEvent(parsed.calendarId, parsed.eventId);
+    }
+
+    await _removeOrphanCalendarEvents(installment);
+  }
+
+  /// Reads calendar events in the loan date range and removes stale app events.
+  static Future<void> _removeOrphanCalendarEvents(
+    InstallmentItem installment,
+  ) async {
+    final calendar = await _pickWritableCalendar();
+    if (calendar?.id == null) return;
+
+    final schedule = _buildSchedule(installment);
+    if (schedule.isEmpty) return;
+
+    final start = schedule.first.dueDate.subtract(const Duration(days: 2));
+    final end = schedule.last.dueDate.add(const Duration(days: 2));
+    final marker = '$_eventMarkerPrefix${installment.id}:';
+
+    final eventsResult = await _calendar.retrieveEvents(
+      calendar!.id,
+      RetrieveEventsParams(startDate: start, endDate: end),
+    );
+    final events = eventsResult.data ?? [];
+    for (final event in events) {
+      final description = event.description ?? '';
+      if (!description.contains(marker)) continue;
+      final eventId = event.eventId;
+      if (eventId == null) continue;
+      await _calendar.deleteEvent(calendar.id, eventId);
+    }
+  }
+
+  static Future<List<String>> _syncCalendarEvents(
+    InstallmentItem installment,
+    List<_DueItem> schedule,
+  ) async {
+    if (!await _ensureCalendarPermissions()) return const [];
+
+    final calendar = await _pickWritableCalendar();
+    if (calendar?.id == null) return const [];
+
+    final calendarId = calendar!.id!;
+    final refs = <String>[];
 
     for (var i = 0; i < schedule.length; i++) {
       if (installment.paidInstallmentIndexes.contains(i)) continue;
 
       final item = schedule[i];
       if (item.dueDate.isBefore(DateTime.now())) continue;
+
+      final start = tz.TZDateTime.from(item.dueDate, tz.local);
+      final end = tz.TZDateTime.from(
+        item.dueDate.add(const Duration(minutes: 30)),
+        tz.local,
+      );
+
       final event = Event(
-        target.id,
+        calendarId,
         title: 'سررسید قسط ${installment.title}',
         description:
+            '$_eventMarkerPrefix${installment.id}:$i\n'
             'مبلغ: ${item.amount.toStringAsFixed(0)} تومان - ${item.label}',
-        start: tz.TZDateTime.from(item.dueDate, tz.local),
-        end: tz.TZDateTime.from(
-          item.dueDate.add(const Duration(minutes: 30)),
-          tz.local,
-        ),
+        start: start,
+        end: end,
         reminders: [Reminder(minutes: 24 * 60)],
       );
-      await _calendar.createOrUpdateEvent(event);
+
+      final createResult = await _calendar.createOrUpdateEvent(event);
+      final eventId = createResult?.data;
+      if (eventId != null && eventId.isNotEmpty) {
+        refs.add(_formatEventRef(calendarId, eventId));
+      }
     }
+
+    return refs;
+  }
+
+  static String _formatEventRef(String calendarId, String eventId) {
+    return '$calendarId$_eventRefSeparator$eventId';
+  }
+
+  static _CalendarEventRef? _parseEventRef(String ref) {
+    final separatorIndex = ref.indexOf(_eventRefSeparator);
+    if (separatorIndex <= 0 || separatorIndex >= ref.length - 2) {
+      return null;
+    }
+    return _CalendarEventRef(
+      calendarId: ref.substring(0, separatorIndex),
+      eventId: ref.substring(separatorIndex + _eventRefSeparator.length),
+    );
   }
 
   static List<_DueItem> _buildSchedule(InstallmentItem installment) {
@@ -260,6 +363,13 @@ class ReminderService {
     final d = int.tryParse(parts[2]) ?? 1;
     return Jalali(y, m, d);
   }
+}
+
+class _CalendarEventRef {
+  const _CalendarEventRef({required this.calendarId, required this.eventId});
+
+  final String calendarId;
+  final String eventId;
 }
 
 class _DueItem {

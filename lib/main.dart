@@ -378,7 +378,12 @@ class _RootTabsState extends State<RootTabs> {
       _installments = items;
     });
     try {
-      await ReminderService.rescheduleAll(items);
+      final synced = await ReminderService.rescheduleAll(items);
+      if (!mounted) return;
+      setState(() {
+        _installments = synced;
+      });
+      await _saveInstallments();
     } catch (_) {
       // Never block UI if reminder scheduling fails on device.
     }
@@ -617,7 +622,18 @@ class _RootTabsState extends State<RootTabs> {
     });
     _goToTab(2);
     await _saveInstallments();
-    await ReminderService.scheduleForInstallment(created);
+    try {
+      final synced = await ReminderService.scheduleForInstallment(created);
+      if (!mounted) return;
+      setState(() {
+        _installments = _installments
+            .map((item) => item.id == synced.id ? synced : item)
+            .toList();
+      });
+      await _saveInstallments();
+    } catch (_) {
+      // Installment is saved even if reminders fail on device.
+    }
   }
 
   Future<void> _openAddCheckForm(BuildContext popupContext) async {
@@ -635,22 +651,40 @@ class _RootTabsState extends State<RootTabs> {
     await _saveChecks();
   }
 
-  void _updateInstallment(InstallmentItem updated) {
+  Future<void> _updateInstallment(InstallmentItem updated) async {
+    InstallmentItem synced = updated;
+    try {
+      synced = await ReminderService.scheduleForInstallment(updated);
+    } catch (_) {
+      // Keep user edits even if reminders fail on device.
+    }
+    if (!mounted) return;
     setState(() {
       _installments = _installments
-          .map((item) => item.id == updated.id ? updated : item)
+          .map((item) => item.id == synced.id ? synced : item)
           .toList();
     });
-    _saveInstallments();
+    await _saveInstallments();
   }
 
-  void _deleteInstallment(String installmentId) {
+  Future<void> _deleteInstallment(String installmentId) async {
+    final existing = _installments
+        .where((item) => item.id == installmentId)
+        .toList();
+    if (existing.isNotEmpty) {
+      try {
+        await ReminderService.cancelForInstallment(existing.first);
+      } catch (_) {
+        // Continue deleting even if calendar cleanup fails.
+      }
+    }
+    if (!mounted) return;
     setState(() {
       _installments = _installments
           .where((item) => item.id != installmentId)
           .toList();
     });
-    _saveInstallments();
+    await _saveInstallments();
   }
 
   void _deleteCheck(String checkId) {
@@ -694,13 +728,21 @@ class _RootTabsState extends State<RootTabs> {
     await _saveInstallments();
     await _saveChecks();
 
+    final syncedInstallments = <InstallmentItem>[];
     for (final installment in _installments) {
       try {
-        await ReminderService.scheduleForInstallment(installment);
+        syncedInstallments.add(
+          await ReminderService.scheduleForInstallment(installment),
+        );
       } catch (_) {
-        // Keep import successful even if reminder scheduling fails on device.
+        syncedInstallments.add(installment);
       }
     }
+    if (!mounted) return result.path;
+    setState(() {
+      _installments = syncedInstallments;
+    });
+    await _saveInstallments();
 
     return result.path;
   }

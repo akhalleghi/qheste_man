@@ -34,7 +34,7 @@ class _AddInstallmentScreenState extends State<AddInstallmentScreen> {
   bool _hasPenaltyFee = false;
   String _penaltyInputType = 'amount';
   bool _notifyPush = true;
-  bool _notifyCalendar = false;
+  bool _notifyCalendar = true;
   String? _titleError;
   String? _totalAmountError;
   String? _durationError;
@@ -211,7 +211,7 @@ class _AddInstallmentScreenState extends State<AddInstallmentScreen> {
                 ),
                 _switchRow(
                   context,
-                  title: '\u0631\u0648\u06cc\u062f\u0627\u062f',
+                  title: 'رویداد در تقویم دستگاه',
                   value: _notifyCalendar,
                   onChanged: (value) => setState(() => _notifyCalendar = value),
                 ),

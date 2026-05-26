@@ -1,7 +1,11 @@
-﻿name: flutter_application_1
-description: "A new Flutter project."
+name: flutter_application_1
+description: >
+  اقساط من — اپلیکیشن فارسی برای مدیریت اقساط وام و چک‌های شما.
+  ثبت قسط با محاسبه سود و کارمزد، پیگیری پرداخت‌ها، یادآور اعلان و تقویم،
+  ضمیمه رسید، گزارش وضعیت، جستجو، پشتیبان‌گیری و بازیابی داده، و رابط کاربری
+  با تم روشن و تاریک. داده‌ها روی دستگاه شما ذخیره می‌شوند.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.11.0

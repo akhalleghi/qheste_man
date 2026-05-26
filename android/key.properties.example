@@ -1,3 +1,14 @@
+# ─── محل فایل ───────────────────────────────────────────────────────────────
+# این فایل را کپی کنید به:
+#   android/key.properties
+# (کنار همین فایل example و در همان پوشه android/)
+#
+# فایل key.properties در git نیست — رمزها را commit نکنید.
+#
+# فایل keystore پیش‌فرض پروژه:
+#   android/bizto-release.jks
+# ─────────────────────────────────────────────────────────────────────────────
+
 storePassword=YOUR_STORE_PASSWORD
 keyPassword=YOUR_KEY_PASSWORD
 keyAlias=bizto-release

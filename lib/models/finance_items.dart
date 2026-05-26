@@ -23,6 +23,7 @@ class InstallmentItem {
     required this.paidInstallmentIndexes,
     required this.installmentReceiptPaths,
     required this.createdAtIso,
+    this.calendarEventRefs = const [],
   });
 
   final String id;
@@ -48,12 +49,17 @@ class InstallmentItem {
   final List<int> paidInstallmentIndexes;
   final Map<String, String> installmentReceiptPaths;
   final String createdAtIso;
+  /// Stored as `calendarId::eventId` for device calendar sync.
+  final List<String> calendarEventRefs;
 
   InstallmentItem copyWith({
     String? remainingAmount,
     String? nextPaymentDate,
     List<int>? paidInstallmentIndexes,
     Map<String, String>? installmentReceiptPaths,
+    bool? notifyPush,
+    bool? notifyCalendar,
+    List<String>? calendarEventRefs,
   }) {
     return InstallmentItem(
       id: id,
@@ -72,8 +78,8 @@ class InstallmentItem {
       penaltyFeeType: penaltyFeeType,
       penaltyFeeAmount: penaltyFeeAmount,
       penaltyFeePercent: penaltyFeePercent,
-      notifyPush: notifyPush,
-      notifyCalendar: notifyCalendar,
+      notifyPush: notifyPush ?? this.notifyPush,
+      notifyCalendar: notifyCalendar ?? this.notifyCalendar,
       notifySms: notifySms,
       note: note,
       paidInstallmentIndexes:
@@ -81,6 +87,7 @@ class InstallmentItem {
       installmentReceiptPaths:
           installmentReceiptPaths ?? this.installmentReceiptPaths,
       createdAtIso: createdAtIso,
+      calendarEventRefs: calendarEventRefs ?? this.calendarEventRefs,
     );
   }
 
@@ -109,6 +116,7 @@ class InstallmentItem {
       'paidInstallmentIndexes': paidInstallmentIndexes,
       'installmentReceiptPaths': installmentReceiptPaths,
       'createdAtIso': createdAtIso,
+      'calendarEventRefs': calendarEventRefs,
     };
   }
 
@@ -144,6 +152,9 @@ class InstallmentItem {
             (key, value) => MapEntry('$key', '$value'),
           ),
       createdAtIso: json['createdAtIso'] as String? ?? '',
+      calendarEventRefs: ((json['calendarEventRefs'] as List?) ?? [])
+          .map((e) => '$e')
+          .toList(),
     );
   }
 }
